@@ -7,6 +7,6 @@ Uses cryptocompare.com API to convert prices into EUR.
 
 ## Extension Setup
 
-Download and move `kucoin` to your MoneyMoney Extensions folder.
+Download and move `kucoin.lua` to your MoneyMoney Extensions folder.
 
 Add a new account (type "KuCoin Account") and use your API key as username and your API secret as password.
