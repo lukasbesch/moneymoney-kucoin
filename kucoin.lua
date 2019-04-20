@@ -33,6 +33,7 @@ WebBanking {
 
 local apiKey
 local apiSecret
+local apiPassphrase
 local balances = {}
 local currency
 local connection = Connection()
@@ -45,8 +46,9 @@ function SupportsBank (protocol, bankCode)
 end
 
 function InitializeSession (protocol, bankCode, username, username2, password, username3)
-  apiKey = username
-  apiSecret = password
+  apiKey = ''
+  apiSecret = ''
+  apiPassphrase = ''
   currency = "EUR"
 end
 
@@ -145,25 +147,29 @@ function httpBuildQuery(params)
   return str.sub(str, 1, -2)
 end
 
-function queryPrivate(page)
+function queryPrivate()
+  local host = 'https://api.kucoin.com';
+  local endpoint ='/api/v1/accounts';
+  local url = host .. endpoint;
+  local method = 'GET'
+  local query = {}
+  -- queryString = httpBuildQuery(query)
+  local queryString = ''
 
-  local endpoint = "/v1/account/balances"
-  local queryString = {}
-  queryString.limit = 20
-  queryString.page = page
-  queryString = httpBuildQuery(queryString)
-
-  local nonce = string.format("%d", MM.time() * 1000)
-  local strForSign = string.format("%s/%s/%s", endpoint, nonce, queryString)
-  local signatureStr = MM.base64(strForSign)
-  local apiSign = bin2hex(MM.hmac256(apiSecret, signatureStr))
+  local posixTimestamp = MM.time()
+  local timestamp = string.format("%d", posixTimestamp * 1000)
+  local strForSign = timestamp .. method .. endpoint .. queryString;
+  local digest = MM.hmac256(strForSign, apiSecret); -- returns binary data
+  local signatureStr = MM.base64(digest);
+  -- see https://moneymoney-app.com/api/webbanking/
 
   local headers = {}
   headers["KC-API-KEY"] = apiKey
-  headers["KC-API-NONCE"] = nonce
-  headers["KC-API-SIGNATURE"] = apiSign
+  headers["KC-API-SIGNATURE"] = signatureStr
+  headers["KC-API-PASSPHRASE"] = apiPassphrase
+  headers["KC-API-TIMESTAMP"] = timestamp
 
-  local content = connection:request("GET", url .. endpoint .. "?" .. queryString, queryString, "Content-Type: application/json", headers)
+  local content, charset, mimeType, filename, headers = connection:request(method, url, queryString, "Content-Type: application/json", headers)
   json = JSON(content)
 
   return json:dictionary()
